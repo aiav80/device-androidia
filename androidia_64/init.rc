@@ -152,7 +152,7 @@ on early-boot
     # tracefs is mounted after 1st access to it
     chmod 0755 /sys/kernel/debug/tracing
 ##############################################################
-# Source: device/intel/mixins/groups/storage/default/init.rc
+# Source: device/intel/mixins/groups/storage/sdcard-mmcblk1-4xUSB-sda-emulated/init.rc
 ##############################################################
 on init
     # Support legacy paths
@@ -205,25 +205,7 @@ on property:sys.usb.config=none && property:sys.usb.configfs=1
 on property:init.svc.adbd=stopped
     setprop sys.usb.ffs.ready 0
 ##############################################################
-# Source: device/intel/mixins/groups/adb_net/true/init.rc
-##############################################################
-on boot
-    start adbd
-    setprop net.eth0.startonboot true
-
-on property:debug.logcat=1
-    class_start debug
-
-service logcat /system/bin/logcat -v threadtime -f /data/log.txt
-    class debug
-
-service setconsole /system/bin/setconsole -g
-    class main
-    user root
-    oneshot
-
-##############################################################
-# Source: device/intel/mixins/groups/kernel/android_ia/init.rc
+# Source: device/intel/mixins/groups/kernel/v80plus_prebuilt/init.rc
 ##############################################################
 on boot
 	write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor interactive
@@ -265,66 +247,46 @@ on property:sys.boot_completed=1
 	write /sys/devices/system/cpu/cpufreq/interactive/boost 0
 	write /sys/devices/system/cpu/cpufreq/interactive/irq_load_threshold 2
 ##############################################################
-# Source: device/intel/mixins/groups/bluetooth/btusb/init.rc
+# Source: device/intel/mixins/groups/bluetooth/rtl8723bs/init.rc
 ##############################################################
-on post-fs-data
-    # To store BT paired info
-    mkdir /data/misc/hcid 0770 bluetooth bluetooth
-
+########################################################
+#  BLUETOOTH CONFIGURATION - REALTEK SPECIFIC
+########################################################
 on boot
-    chmod 0644 /sys/kernel/debug/bluetooth/l2cap_le_max_credits
-    chmod 0644 /sys/kernel/debug/bluetooth/l2cap_le_default_mps
+    start rfkill_bt
 
-on post-fs-data
-    mkdir /data/misc/dhcp 0770 dhcp system
+on post-fs
+    mkdir /config/bt
+    chown system bluetooth /config/bt
+    chmod 0770 /config/bt
+    start bd_prov
 
-service dhcpcd_bt-pan /system/bin/dhcpcd -ABKL
-    disabled
+on early-boot
+    chmod 0644 /config/bt/bd_addr.conf
+    setprop ro.bt.bdaddr_path "/config/bt/bd_addr.conf"
+
+service rfkill_bt /system/bin/sh /rfkill_bt.sh
+    class core
+    user root
     oneshot
 
-service iprenew_bt-pan /system/bin/dhcpcd -n
-    disabled
-    oneshot
-##############################################################
-# Source: device/intel/mixins/groups/wlan/iwlwifi/init.rc
-##############################################################
-on boot
-    setprop wifi.interface wlan0
-
-service dhcpcd_wlan0 /system/bin/dhcpcd -dABKL
-    group dhcp
-    disabled
-    oneshot
-
-service wpa_supplicant /system/bin/wpa_supplicant \
-        -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
-        -I/system/etc/wifi/wpa_supplicant_overlay.conf \
-        -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0
+service dhcpcd_bt-pan /system/bin/logwrapper /system/bin/dhcpcd -ABKL
     class main
-    socket wpa_wlan0 dgram 660 wifi wifi
+    group bluetooth wifi system dhcp
     disabled
     oneshot
 
-service p2p_supplicant /system/bin/wpa_supplicant \
-   -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
-   -I/system/etc/wifi/wpa_supplicant_overlay.conf \
-   -m/data/misc/wifi/p2p_supplicant.conf \
-   -O/data/misc/wifi/sockets \
-   -e/data/misc/wifi/entropy.bin \
-   -dt -g@android:wpa_wlan0
-    class main
-    socket wpa_wlan0 dgram 660 wifi wifi
+service iprenew_bt-pan /system/bin/logwrapper /system/bin/dhcpcd -n
+    group bluetooth system dhcp
     disabled
     oneshot
 
-service dhcpcd_p2p /system/bin/dhcpcd -aABKL
+service bd_prov /system/bin/bd_prov
+    class core
+    user system
+    group system bluetooth
     disabled
     oneshot
-
-service iprenew_p2p /system/bin/dhcpcd -n
-    disabled
-    oneshot
-
 ##############################################################
 # Source: device/intel/mixins/groups/cpuset/4cores/init.rc
 ##############################################################
@@ -354,6 +316,8 @@ on init
     # can be associated with the correct disk. Create a shortcut to
     # /dev/block/by-name so that we can use the same fstabs everywhere.
     exec u:r:set_storage:s0 root root -- /sbin/set_storage
+    mkdir /dev/block 0755 root root
+    symlink /dev/block/platform/pci0000:00/80860F14:00/by-name /dev/block/by-name
 ##############################################################
 # Source: device/intel/mixins/groups/usb/host+acc/init.rc
 ##############################################################

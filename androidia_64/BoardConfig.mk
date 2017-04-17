@@ -57,12 +57,11 @@ DEVICE_PACKAGE_OVERLAYS += device/intel/common/device-type/overlay-tablet
 ##############################################################
 BOARD_SEPOLICY_DIRS += device/intel/android_ia/sepolicy/debugfs
 ##############################################################
-# Source: device/intel/mixins/groups/kernel/android_ia/BoardConfig.mk
+# Source: device/intel/mixins/groups/kernel/v80plus_prebuilt/BoardConfig.mk
 ##############################################################
-TARGET_USES_64_BIT_BINDER := true
-BOARD_USE_64BIT_USERSPACE := true
-TARGET_SUPPORTS_64_BIT_APPS := true
-
+TARGET_USES_64_BIT_BINDER := false
+BOARD_USE_64BIT_USERSPACE := false
+TARGET_SUPPORTS_64_BIT_APPS := false
 
 TARGET_PRELINK_MODULE := false
 TARGET_NO_KERNEL ?= false
@@ -77,11 +76,14 @@ BOARD_KERNEL_CMDLINE += $(SERIAL_PARAMETER)
 endif
 endif
 ##############################################################
-# Source: device/intel/mixins/groups/bluetooth/btusb/BoardConfig.mk
+# Source: device/intel/mixins/groups/bluetooth/rtl8723bs/BoardConfig.mk
 ##############################################################
 BOARD_HAVE_BLUETOOTH := true
-BOARD_HAVE_BLUETOOTH_LINUX := true
-BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/intel/common/bluetooth/bcm43241/
+BOARD_HAVE_BLUETOOTH_RTK := true
+RTK_BLUETOOTH_INTERFACE := uart
+BLUETOOTH_BLUEDROID_RTK := true
+BLUETOOTH_HCI_USE_RTK_H5 := true
+BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/intel/common/bluetooth/default/
 DEVICE_PACKAGE_OVERLAYS += device/intel/common/bluetooth/overlay-bt-pan
 ##############################################################
 # Source: device/intel/mixins/groups/boot-arch/android_ia/BoardConfig.mk
@@ -91,8 +93,8 @@ DEVICE_PACKAGE_OVERLAYS += device/intel/common/bluetooth/overlay-bt-pan
 TARGET_BOARD_PLATFORM := android_ia
 
 TARGET_USERIMAGES_USE_EXT4 := true
-BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
-BOARD_CACHEIMAGE_PARTITION_SIZE := 69206016
+BOARD_USERDATAIMAGE_PARTITION_SIZE := 6442450944
+BOARD_CACHEIMAGE_PARTITION_SIZE := 268435456
 BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_FLASH_BLOCK_SIZE := 512
 
@@ -104,9 +106,9 @@ TARGET_USERIMAGES_SPARSE_EXT_DISABLED := true
 BOARD_SYSTEMIMAGE_FILE_SYSTEM_TYPE := squashfs
 endif
 
-BOARD_SYSTEMIMAGE_PARTITION_SIZE = 3489660928
+BOARD_SYSTEMIMAGE_PARTITION_SIZE = 2147483648
 
-BOARD_BOOTLOADER_PARTITION_SIZE ?= 42914560
+BOARD_BOOTLOADER_PARTITION_SIZE ?= 104857600
 BOARD_BOOTLOADER_BLOCK_SIZE := 512
 TARGET_BOOTLOADER_BOARD_NAME := $(TARGET_DEVICE)
 
@@ -141,7 +143,7 @@ BOARD_FLASHFILES += $(PRODUCT_OUT)/fastboot-usb.img
 BOARD_FLASHFILES += $(PRODUCT_OUT)/recovery.img
 BOARD_FLASHFILES += $(PRODUCT_OUT)/cache.img
 BOARD_FLASHFILES += $(PRODUCT_OUT)/config.img
-BOARD_FLASHFILES += $(PRODUCT_OUT)/vendor.img
+#BOARD_FLASHFILES += $(PRODUCT_OUT)/vendor.img
 ##############################################################
 # Source: device/intel/mixins/groups/audio/android_ia/BoardConfig.mk
 ##############################################################
@@ -149,26 +151,13 @@ BOARD_USES_ALSA_AUDIO := true
 BOARD_USES_TINY_ALSA_AUDIO := true
 BOARD_USES_GENERIC_AUDIO ?= false
 ##############################################################
-# Source: device/intel/mixins/groups/wlan/iwlwifi/BoardConfig.mk
+# Source: device/intel/mixins/groups/cpu-arch/x86/BoardConfig.mk
 ##############################################################
-# wifi support
-WPA_SUPPLICANT_VERSION := VER_0_8_X
-##############################################################
-# Source: device/intel/mixins/groups/cpu-arch/skl/BoardConfig.mk
-##############################################################
-ifeq ($(BOARD_USE_64BIT_USERSPACE),true)
-# 64b-specific items:
-TARGET_ARCH := x86_64
-TARGET_CPU_ABI := x86_64
-TARGET_2ND_CPU_ABI := x86
-TARGET_2ND_ARCH := x86
-TARGET_2ND_ARCH_VARIANT := x86
-TARGET_2ND_CPU_VARIANT := x86
-else
-# 32b-specific items:
-TARGET_ARCH := x86
+TARGET_CPU_ABI_LIST_32_BIT := x86
 TARGET_CPU_ABI := x86
-endif
+TARGET_ARCH_VARIANT := x86
+
+TARGET_ARCH := x86
 ##############################################################
 # Source: device/intel/mixins/groups/cpuset/4cores/BoardConfig.mk
 ##############################################################
@@ -191,18 +180,6 @@ BOARD_SEPOLICY_DIRS += device/intel/android_ia/sepolicy/set_storage
 # Source: device/intel/mixins/groups/config-partition/enabled/BoardConfig.mk
 ##############################################################
 BOARD_CONFIGIMAGE_PARTITION_SIZE := 8388608
-##############################################################
-# Source: device/intel/mixins/groups/vendor-partition/true/BoardConfig.mk
-##############################################################
-# Those 3 lines are required to enable vendor image generation.
-# Remove them if vendor partition is not used.
-TARGET_COPY_OUT_VENDOR := vendor
-BOARD_VENDORIMAGE_PARTITION_SIZE := 1572864000
-ifeq ($(SPARSE_IMG),true)
-BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
-else
-BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := squashfs
-endif
 # ------------------ END MIX-IN DEFINITIONS ------------------
 
 # Install Native Bridge

@@ -209,28 +209,14 @@ PRODUCT_PACKAGES += \
     gralloc.android_ia
 
 
-
-# Mesa
-PRODUCT_COPY_FILES += \
-    frameworks/native/data/etc/android.hardware.opengles.aep.xml:system/etc/permissions/android.hardware.opengles.aep.xml
-
-# GLES version
+# GLES version. We cannot enable Android
+# 3.2 support for Gen9+ devices.
 PRODUCT_PROPERTY_OVERRIDES += \
    ro.opengles.version=196609
 
-PRODUCT_COPY_FILES += \
-    frameworks/native/data/etc/android.hardware.vulkan.level-1.xml:system/etc/permissions/android.hardware.vulkan.level.xml
 
 
-PRODUCT_COPY_FILES += \
-    frameworks/native/data/etc/android.hardware.vulkan.version-1_0_3.xml:system/etc/permissions/android.hardware.vulkan.version.xml
 
-PRODUCT_PACKAGES += \
-    vulkan.android_ia \
-    libvulkan_intel
-
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.hardware.vulkan=android_ia
 ##############################################################
 # Source: device/intel/mixins/groups/media/android_ia/product.mk
 ##############################################################
@@ -284,22 +270,14 @@ PRODUCT_PROPERTY_OVERRIDES += \
    net.eth0.startonboot=1
 
 ##############################################################
-# Source: device/intel/mixins/groups/display-density/default/product.mk
+# Source: device/intel/mixins/groups/display-density/high/product.mk
 ##############################################################
-# Do not remove this file. Unable to update mixins without this.
+ADDITIONAL_DEFAULT_PROPERTIES += ro.sf.lcd_density=240
 ##############################################################
-# Source: device/intel/mixins/groups/adb_net/true/product.mk
+# Source: device/intel/mixins/groups/kernel/v80plus_prebuilt/product.mk
 ##############################################################
-# Enable Secure Debugging
-ifneq ($(TARGET_BUILD_VARIANT),eng)
-PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.adb.secure=1
-endif
-##############################################################
-# Source: device/intel/mixins/groups/kernel/android_ia/product.mk
-##############################################################
-TARGET_KERNEL_ARCH := x86_64
-BOARD_USE_64BIT_KERNEL := true
-
+TARGET_KERNEL_ARCH := x86
+BOARD_USE_64BIT_KERNEL := false
 
 KERNEL_MODULES_ROOT_PATH ?= /vendor/lib/modules
 KERNEL_MODULES_ROOT ?= $(KERNEL_MODULES_ROOT_PATH)
@@ -311,15 +289,30 @@ FIRMWARE_FILTERS ?= .git/% %.mk
 
 # Firmware
 $(call inherit-product,device/intel/android_ia/common/firmware.mk)
+
+ifeq ($(TARGET_PREBUILT_KERNEL),)
+  LOCAL_KERNEL := device/intel/android_ia/androidia_64/kernel
+else
+  LOCAL_KERNEL := $(TARGET_PREBUILT_KERNEL)
+endif
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_KERNEL):kernel
 ##############################################################
-# Source: device/intel/mixins/groups/bluetooth/btusb/product.mk
+# Source: device/intel/mixins/groups/bluetooth/rtl8723bs/product.mk
 ##############################################################
 PRODUCT_PACKAGES += \
+    bd_prov \
+    libbt-vendor \
+    rfkill_bt.sh \
+    bt_vendor.default.conf \
     audio.a2dp.default \
-		ath3k-1.fw \
+    rtl8723b_config \
+    rtl8723b_fw \
 
 PRODUCT_COPY_FILES += frameworks/native/data/etc/android.hardware.bluetooth.xml:system/etc/permissions/android.hardware.bluetooth.xml \
 		frameworks/native/data/etc/android.hardware.bluetooth_le.xml:system/etc/permissions/android.hardware.bluetooth_le.xml
+
 ##############################################################
 # Source: device/intel/mixins/groups/audio/android_ia/product.mk
 ##############################################################
@@ -340,24 +333,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     device/intel/android_ia/common/audio/mixer_paths.xml:system/etc/mixer_paths.xml \
     device/intel/android_ia/common/audio/audio_policy.conf:system/etc/audio_policy.conf
-##############################################################
-# Source: device/intel/mixins/groups/wlan/iwlwifi/product.mk
-##############################################################
-PRODUCT_PACKAGES += \
-    libwpa_client \
-    wpa_cli \
-    wpa_supplicant
-
-PRODUCT_COPY_FILES += \
-  device/intel/common/wlan/wpa_supplicant-common.conf:system/etc/wifi/wpa_supplicant.conf \
-  device/intel/common/wlan/iwlwifi/wpa_supplicant_overlay.conf:system/etc/wifi/wpa_supplicant_overlay.conf \
-  frameworks/native/data/etc/android.software.app_widgets.xml:system/etc/permissions/android.software.app_widgets.xml \
-  frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
-  frameworks/native/data/etc/android.hardware.wifi.direct.xml:system/etc/permissions/android.hardware.wifi.direct.xml
-
-# Wifi configuration
-BOARD_WPA_SUPPLICANT_DRIVER := NL80211
-BOARD_WLAN_DEVICE := iwlwifi
 ##############################################################
 # Source: device/intel/mixins/groups/rfkill/true/product.mk
 ##############################################################
@@ -381,10 +356,6 @@ PRODUCT_PACKAGES += \
 # Source: device/intel/mixins/groups/lights/true/product.mk
 ##############################################################
 PRODUCT_PACKAGES += lights.android_ia
-##############################################################
-# Source: device/intel/mixins/groups/vendor-partition/true/product.mk
-##############################################################
-PRODUCT_VENDOR_VERITY_PARTITION := /dev/block/mmcblk1p10
 ##############################################################
 # Source: device/intel/mixins/groups/debug-logs/true/product.mk
 ##############################################################

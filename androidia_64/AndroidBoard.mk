@@ -6,84 +6,17 @@
 droid: flashfiles
 	-$(hide) $(ACP) $(out_flashfiles) $(DIST_DIR)
 ##############################################################
-# Source: device/intel/mixins/groups/kernel/android_ia/AndroidBoard.mk
-##############################################################
-ifneq ($(TARGET_PREBUILT_KERNEL),)
-$(error TARGET_PREBUILT_KERNEL defined but AndroidIA kernels build from source)
-endif
-
-TARGET_KERNEL_SRC ?= kernel/android_ia
-
-TARGET_KERNEL_ARCH := x86_64
-TARGET_KERNEL_CONFIG ?= kernel_64_defconfig
-
-KERNEL_CONFIG_DIR := device/intel/android_ia/kernel_config
-
-KERNEL_NAME := bzImage
-
-# Set the output for the kernel build products.
-KERNEL_OUT := $(abspath $(TARGET_OUT_INTERMEDIATES)/kernel)
-KERNEL_BIN := $(KERNEL_OUT)/arch/$(TARGET_KERNEL_ARCH)/boot/$(KERNEL_NAME)
-KERNEL_MODULES_INSTALL := $(PRODUCT_OUT)/$(TARGET_COPY_OUT_VENDOR)/lib/modules
-
-KERNELRELEASE = $(shell cat $(KERNEL_OUT)/include/config/kernel.release)
-
-build_kernel := $(MAKE) -C $(TARGET_KERNEL_SRC) \
-		O=$(KERNEL_OUT) \
-		ARCH=$(TARGET_KERNEL_ARCH) \
-		CROSS_COMPILE="$(KERNEL_CROSS_COMPILE_WRAPPER)" \
-		KCFLAGS="$(KERNEL_CFLAGS)" \
-		KAFLAGS="$(KERNEL_AFLAGS)" \
-		$(if $(SHOW_COMMANDS),V=1) \
-		INSTALL_MOD_PATH=$(abspath "$(PRODUCT_OUT)/$(TARGET_COPY_OUT_VENDOR)")
-
-KERNEL_CONFIG_FILE := device/intel/android_ia/kernel_config/$(TARGET_KERNEL_CONFIG)
-
-KERNEL_CONFIG := $(KERNEL_OUT)/.config
-$(KERNEL_CONFIG): $(KERNEL_CONFIG_FILE)
-	$(hide) mkdir -p $(@D) && cat $(wildcard $^) > $@
-	$(build_kernel) oldnoconfig
-
-# Produces the actual kernel image!
-$(PRODUCT_OUT)/kernel: $(KERNEL_CONFIG) | $(ACP)
-	$(build_kernel) $(KERNEL_NAME) modules
-	$(hide) $(ACP) -fp $(KERNEL_BIN) $@
-
-ALL_EXTRA_MODULES := $(patsubst %,$(TARGET_OUT_INTERMEDIATES)/kmodule/%,$(TARGET_EXTRA_KERNEL_MODULES))
-$(ALL_EXTRA_MODULES): $(TARGET_OUT_INTERMEDIATES)/kmodule/%: $(PRODUCT_OUT)/kernel
-	@echo Building additional kernel module $*
-	$(build_kernel) M=$(abspath $@) modules
-
-# Copy modules in directory pointed by $(KERNEL_MODULES_ROOT)
-# First copy modules keeping directory hierarchy lib/modules/`uname-r`for libkmod
-# Second, create flat hierarchy for insmod linking to previous hierarchy
-$(KERNEL_MODULES_INSTALL): $(PRODUCT_OUT)/kernel $(ALL_EXTRA_MODULES)
-	$(hide) rm -rf $(PRODUCT_OUT)/$(TARGET_COPY_OUT_VENDOR)/lib/modules
-	$(build_kernel) modules_install
-	$(hide) for kmod in "$(TARGET_EXTRA_KERNEL_MODULES)" ; do \
-		echo Installing additional kernel module $${kmod} ; \
-		$(subst +,,$(subst $(hide),,$(build_kernel))) M=$(abspath $(TARGET_OUT_INTERMEDIATES))/$${kmod}.kmodule modules_install ; \
-	done
-	$(hide) rm -f $(PRODUCT_OUT)/$(TARGET_COPY_OUT_VENDOR)/lib/modules/*/{build,source}
-	$(hide) mv $(PRODUCT_OUT)/$(TARGET_COPY_OUT_VENDOR)/lib/modules/$(KERNELRELEASE)/* $(PRODUCT_OUT)/$(TARGET_COPY_OUT_VENDOR)/lib/modules
-	$(hide) rm -rf $(PRODUCT_OUT)/$(TARGET_COPY_OUT_VENDOR)/lib/modules/$(KERNELRELEASE)
-	$(hide) touch $@
-
-# Makes sure any built modules will be included in the system image build.
-ALL_DEFAULT_INSTALLED_MODULES += $(KERNEL_MODULES_INSTALL)
-
-installclean: FILES += $(KERNEL_OUT) $(PRODUCT_OUT)/kernel
-
-.PHONY: kernel
-kernel: $(PRODUCT_OUT)/kernel
-##############################################################
 # Source: device/intel/mixins/groups/boot-arch/android_ia/AndroidBoard.mk
 ##############################################################
 define generate_flashfiles
 zip -qj $(1) $(2)
 endef
 
+ifneq ($(BUILD_NUMBER),)
+out_flashfiles := $(PRODUCT_OUT)/$(TARGET_PRODUCT)-flashfiles-$(BUILD_NUMBER).zip
+else
 out_flashfiles := $(PRODUCT_OUT)/$(TARGET_PRODUCT).flashfiles.$(TARGET_BUILD_VARIANT).$(USER).zip
+endif
 
 $(PRODUCT_OUT)/efi/installer.cmd:
 	$(ACP) $(TARGET_DEVICE_DIR)/$(@F) $@
@@ -246,11 +179,4 @@ $(INSTALLED_CONFIGIMAGE_TARGET) : $(MKEXTUSERIMG) $(MAKE_EXT4FS) $(E2FSCK)
 		$(BOARD_CONFIGIMAGE_PARTITION_SIZE)
 
 INSTALLED_RADIOIMAGE_TARGET += $(INSTALLED_CONFIGIMAGE_TARGET)
-##############################################################
-# Source: device/intel/mixins/groups/vendor-partition/true/AndroidBoard.mk
-##############################################################
-
-# This is to ensure that kernel modules are installed before
-# vendor.img is generated.
-$(PRODUCT_OUT)/vendor.img : $(KERNEL_MODULES_INSTALL)
 # ------------------ END MIX-IN DEFINITIONS ------------------
